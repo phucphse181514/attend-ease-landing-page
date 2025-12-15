@@ -116,14 +116,7 @@ export default function HomePage() {
               Tìm công việc
             </button>
           </nav>
-          <div className="flex items-center gap-4">
-            <Button
-              size="sm"
-              className="cursor-pointer bg-primary hover:bg-primary/90"
-            >
-              Dùng thử miễn phí
-            </Button>
-          </div>
+          <div className="flex items-center gap-4"></div>
         </div>
       </header>
 
