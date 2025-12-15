@@ -69,15 +69,32 @@ export default function HomePage() {
   const [activeTab, setActiveTab] = useState<"home" | "jobs">("home");
   const [jobs, setJobs] = useState<Job[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadJobs = async () => {
       try {
+        console.log("Starting to load jobs...");
         setIsLoading(true);
+        setError(null);
+
         const data = await fetchJobs();
-        setJobs(data.data || []);
+        console.log("Data received:", data);
+
+        if (data && data.data) {
+          setJobs(data.data);
+          console.log("Jobs set successfully:", data.data.length);
+        } else {
+          setJobs([]);
+          console.warn("No jobs data in response");
+        }
       } catch (error) {
-        console.error("Error fetching jobs:", error);
+        console.error("Error loading jobs:", error);
+        setError(
+          error instanceof Error
+            ? error.message
+            : "Không thể tải danh sách công việc"
+        );
         setJobs([]);
       } finally {
         setIsLoading(false);
@@ -509,6 +526,26 @@ export default function HomePage() {
                       <p className="text-muted-foreground">
                         Đang tải việc làm...
                       </p>
+                    </div>
+                  ) : error ? (
+                    <div className="text-center py-12">
+                      <Card className="border-destructive/50">
+                        <CardContent className="p-6">
+                          <p className="text-destructive mb-2">
+                            ❌ Lỗi tải dữ liệu
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {error}
+                          </p>
+                          <Button
+                            onClick={() => window.location.reload()}
+                            className="mt-4"
+                            variant="outline"
+                          >
+                            Thử lại
+                          </Button>
+                        </CardContent>
+                      </Card>
                     </div>
                   ) : jobs.length === 0 ? (
                     <div className="text-center py-12">
