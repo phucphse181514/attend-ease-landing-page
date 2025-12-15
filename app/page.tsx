@@ -420,13 +420,6 @@ export default function HomePage() {
                   Hãy để AttendEase giúp doanh nghiệp của bạn tối ưu hóa quy
                   trình và nâng cao hiệu suất làm việc
                 </p>
-                <Button
-                  size="lg"
-                  className="cursor-pointer bg-primary text-lg hover:bg-primary/90"
-                >
-                  Đặt lịch tư vấn miễn phí
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
               </div>
             </div>
           </section>
