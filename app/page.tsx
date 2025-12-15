@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +21,9 @@ import {
   Target,
   Sparkles,
 } from "lucide-react";
+import type { Job } from "@/lib/models/job";
+import { fetchJobs, getJobApplicationLink } from "@/lib/api/jobs";
+import { stripHtml, formatTrialPeriod } from "@/lib/utils";
 
 const features = [
   {
@@ -55,75 +58,6 @@ const features = [
   },
 ];
 
-const jobs = [
-  {
-    id: 1,
-    title: "Senior Frontend Developer",
-    department: "Engineering",
-    location: "TP.HCM",
-    type: "Full-time",
-    salary: "25-35 triệu",
-    description:
-      "Tham gia phát triển giao diện người dùng cho hệ thống quản lý nhân sự AttendEase",
-    tags: ["React", "TypeScript", "Next.js"],
-  },
-  {
-    id: 2,
-    title: "Backend Developer (Node.js)",
-    department: "Engineering",
-    location: "TP.HCM",
-    type: "Full-time",
-    salary: "20-30 triệu",
-    description:
-      "Xây dựng và tối ưu hóa API, database cho hệ thống HR toàn diện",
-    tags: ["Node.js", "PostgreSQL", "API"],
-  },
-  {
-    id: 3,
-    title: "AI/ML Engineer",
-    department: "AI Research",
-    location: "TP.HCM / Remote",
-    type: "Full-time",
-    salary: "30-40 triệu",
-    description:
-      "Phát triển và cải thiện thuật toán nhận diện khuôn mặt và các tính năng AI",
-    tags: ["Python", "TensorFlow", "Computer Vision"],
-  },
-  {
-    id: 4,
-    title: "Product Manager",
-    department: "Product",
-    location: "Hà Nội",
-    type: "Full-time",
-    salary: "25-35 triệu",
-    description:
-      "Định hướng phát triển sản phẩm, làm việc với đội ngũ kỹ thuật và khách hàng",
-    tags: ["Agile", "Product Strategy", "Leadership"],
-  },
-  {
-    id: 5,
-    title: "UI/UX Designer",
-    department: "Design",
-    location: "TP.HCM",
-    type: "Full-time",
-    salary: "18-25 triệu",
-    description:
-      "Thiết kế trải nghiệm người dùng trực quan và hiện đại cho hệ thống HR",
-    tags: ["Figma", "UI Design", "User Research"],
-  },
-  {
-    id: 6,
-    title: "Sales Executive",
-    department: "Sales",
-    location: "TP.HCM / Hà Nội",
-    type: "Full-time",
-    salary: "15-20 triệu + Thưởng",
-    description:
-      "Tư vấn và bán giải pháp quản lý nhân sự cho doanh nghiệp vừa và lớn",
-    tags: ["B2B Sales", "Consulting", "CRM"],
-  },
-];
-
 const stats = [
   { number: "500+", label: "Doanh nghiệp tin dùng" },
   { number: "50,000+", label: "Nhân viên sử dụng" },
@@ -133,6 +67,25 @@ const stats = [
 
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState<"home" | "jobs">("home");
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const loadJobs = async () => {
+      try {
+        setIsLoading(true);
+        const data = await fetchJobs();
+        setJobs(data.data || []);
+      } catch (error) {
+        console.error("Error fetching jobs:", error);
+        setJobs([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadJobs();
+  }, []);
 
   return (
     <div className="min-h-screen">
@@ -520,7 +473,7 @@ export default function HomePage() {
                   <Card>
                     <CardContent className="p-6 text-center">
                       <div className="mb-2 text-3xl font-bold text-primary">
-                        6
+                        {isLoading ? "..." : jobs.length}
                       </div>
                       <div className="text-sm text-muted-foreground">
                         Vị trí đang tuyển
@@ -551,66 +504,100 @@ export default function HomePage() {
 
                 {/* Jobs list */}
                 <div className="space-y-6">
-                  {jobs.map((job) => (
-                    <Card
-                      key={job.id}
-                      className="group cursor-pointer transition-all hover:shadow-lg hover:shadow-primary/10"
-                    >
-                      <CardContent className="p-6">
-                        <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-                          <div className="flex-1">
-                            <div className="mb-3 flex flex-wrap items-start gap-3">
-                              <h3 className="text-2xl font-bold">
-                                {job.title}
-                              </h3>
-                              <Badge
-                                variant="secondary"
-                                className="bg-primary/10 text-primary"
-                              >
-                                {job.type}
-                              </Badge>
-                            </div>
-                            <div className="mb-4 flex flex-wrap gap-4 text-sm text-muted-foreground">
-                              <span className="flex items-center gap-1">
-                                <Building2 className="h-4 w-4" />
-                                {job.department}
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <MapPin className="h-4 w-4" />
-                                {job.location}
-                              </span>
-                            </div>
-                            <p className="mb-4 text-muted-foreground">
-                              {job.description}
-                            </p>
-                            <div className="flex flex-wrap gap-2">
-                              {job.tags.map((tag, i) => (
+                  {isLoading ? (
+                    <div className="text-center py-12">
+                      <p className="text-muted-foreground">
+                        Đang tải việc làm...
+                      </p>
+                    </div>
+                  ) : jobs.length === 0 ? (
+                    <div className="text-center py-12">
+                      <p className="text-muted-foreground">
+                        Hiện tại chưa có vị trí tuyển dụng nào.
+                      </p>
+                    </div>
+                  ) : (
+                    jobs.map((job) => (
+                      <Card
+                        key={job.jobId}
+                        className="group cursor-pointer transition-all hover:shadow-lg hover:shadow-primary/10"
+                      >
+                        <CardContent className="p-6">
+                          <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+                            <div className="flex-1">
+                              <div className="mb-3 flex flex-wrap items-start gap-3">
+                                <h3 className="text-2xl font-bold">
+                                  {job.jobTitle}
+                                </h3>
                                 <Badge
-                                  key={i}
-                                  variant="outline"
-                                  className="text-xs"
+                                  variant="secondary"
+                                  className="bg-primary/10 text-primary"
                                 >
-                                  {tag}
+                                  {job.status === "OPEN"
+                                    ? "Đang tuyển"
+                                    : "Đã đóng"}
                                 </Badge>
-                              ))}
+                              </div>
+                              <div className="mb-4 flex flex-wrap gap-4 text-sm text-muted-foreground">
+                                <span className="flex items-center gap-1">
+                                  <Building2 className="h-4 w-4" />
+                                  {job.positionName}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <MapPin className="h-4 w-4" />
+                                  {job.address}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <Clock className="h-4 w-4" />
+                                  {formatTrialPeriod(job.trialPeriod)}
+                                </span>
+                              </div>
+                              {job.fromSalary !== "0" &&
+                                job.toSalary !== "0" && (
+                                  <div className="mb-3 text-sm font-medium text-primary">
+                                    Lương: {job.fromSalary} - {job.toSalary}{" "}
+                                    triệu VNĐ
+                                  </div>
+                                )}
+                              <p className="mb-4 text-muted-foreground">
+                                {stripHtml(job.jobDescription)}
+                              </p>
+                              <div className="flex flex-wrap gap-2">
+                                {job.requireSkill
+                                  .filter(
+                                    (skill) => skill !== "Không yêu cầu kĩ năng"
+                                  )
+                                  .map((skill, i) => (
+                                    <Badge
+                                      key={i}
+                                      variant="outline"
+                                      className="text-xs"
+                                    >
+                                      {skill}
+                                    </Badge>
+                                  ))}
+                              </div>
+                            </div>
+                            <div className="shrink-0 lg:ml-6">
+                              <Button
+                                size="lg"
+                                className="cursor-pointer w-full bg-primary hover:bg-primary/90 lg:w-auto"
+                                onClick={() => {
+                                  const applicationLink = getJobApplicationLink(
+                                    job.jobCode
+                                  );
+                                  window.open(applicationLink, "_blank");
+                                }}
+                              >
+                                Ứng tuyển ngay
+                                <ArrowRight className="ml-2 h-5 w-5" />
+                              </Button>
                             </div>
                           </div>
-                          <div className="shrink-0 lg:ml-6">
-                            <Button
-                              size="lg"
-                              className="cursor-pointer w-full bg-primary hover:bg-primary/90 lg:w-auto"
-                              onClick={() => {
-                                window.open("/images/image.png", "_blank");
-                              }}
-                            >
-                              Ứng tuyển ngay
-                              <ArrowRight className="ml-2 h-5 w-5" />
-                            </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                        </CardContent>
+                      </Card>
+                    ))
+                  )}
                 </div>
 
                 {/* Why Join Section */}
